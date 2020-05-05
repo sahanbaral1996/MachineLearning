@@ -31,9 +31,9 @@ x_test /= 255
 y_test = utils.to_categorical(y_test)
 
 neural = Network.Network()
-neural.add(Conv2D.ConvLayer((28,28,1),1))
+neural.add(Conv2D.ConvLayer((28,28,1),64))
 neural.add(Activation.Activation(tanh, tanh_prime))
-neural.add(Conv2D.ConvLayer((26,26,1),16))
+neural.add(Conv2D.ConvLayer((26,26,64),16))
 neural.add(Activation.Activation(tanh, tanh_prime))
 neural.add(Flatten.Flatten())
 neural.add(Dense.Dense(24*24*16, 100))
@@ -42,7 +42,7 @@ neural.add(Dense.Dense(100, 10))
 neural.add(Activation.Activation(tanh, tanh_prime))
 
 neural.use(loss.mse, loss.mse_prime)
-neural.fit(x_train[0:1000],y_train[0:1000], 5, 0.1)
+neural.fit(x_train[0:4000],y_train[0:4000], 15, 0.1)
 
 print(neural.predict(x_test[0:5]))
 
