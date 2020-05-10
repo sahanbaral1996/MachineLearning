@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, Activation
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, Activation,Dropout
 import numpy as np
 from sklearn.model_selection import train_test_split
 import cv2
@@ -38,8 +38,14 @@ model.add(Conv2D(128, (3, 3)))
 model.add(Activation("relu"))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 
+model.add(Conv2D(128, (3, 3)))
+model.add(Activation("relu"))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
 model.add(Flatten())
 model.add(Dense(128))
+
+model.add(Dense(32))
 
 model.add(Dense(1))
 model.add(Activation("sigmoid"))
