@@ -1,57 +1,92 @@
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, Activation,Dropout
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, Activation,Dropout,BatchNormalization
 import numpy as np
 from sklearn.model_selection import train_test_split
+import pandas as pd
+from tensorflow.keras import utils
 import cv2
 import os
 
-X = []
-Y = []
-DIRS = ["sad-photos foldername","happy photos folder name"]
-for index,dir in enumerate(DIRS):
-    for images in os.listdir(dir+'/'):
-        X.append(cv2.imread(os.path.join(dir,images),cv2.IMREAD_GRAYSCALE))
-        Y.append(index)
+
+df = pd.read_csv("C:\\Users\\sahan.HP2_NOV2018\\Documents\\fer\\fer2013\\fer2013.csv")
+
+#train_df = df[['Usage']=='Training']
 
 
-# load data
-X_train = np.array(X)
-Y_train = np.array(Y)
+X_train,train_y,X_test,test_y=[],[],[],[]
 
-print(X_train.shape)
-print(Y_train.shape)
+for index, row in df.iterrows():
+    val=row['pixels'].split(" ")
+    try:
+        if 'Training' in row['Usage']:
+           X_train.append(np.array(val,'float32'))
+           train_y.append(row['emotion'])
+        elif 'PublicTest' in row['Usage']:
+           X_test.append(np.array(val,'float32'))
+           test_y.append(row['emotion'])
+    except:
+        print(f"error occured at index :{index} and row:{row}")
 
-x_train, x_test, y_train, y_test = train_test_split(X_train, Y_train, test_size=0.2)
+X_train = np.array(X_train,'float32')/255
+train_y = np.array(train_y,'float32')
+X_test = np.array(X_test,'float32')/255
+test_y = np.array(test_y,'float32')
 
-x = np.array(x_train).reshape(-1, 50, 50, 1)/255.0
-x = np.float32(x)
-y = np.array(y_train)
+train_y=utils.to_categorical(train_y, num_classes=7)
+test_y=utils.to_categorical(test_y, num_classes=7)
+
+X_train = X_train.reshape(X_train.shape[0], 48, 48, 1)
+
+X_test = X_test.reshape(X_test.shape[0], 48, 48, 1)
 
 model = Sequential()
 
-model.add(Conv2D(64, (3, 3), input_shape=x.shape[1:]))
-model.add(Activation("relu"))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(64, kernel_size=(3,3),activation='relu',kernel_initializer='uniform',input_shape=X_train.shape[1:]))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2,2), strides=(2, 2)))
+model.add(Dropout(0.5))
 
-model.add(Conv2D(128, (3, 3)))
-model.add(Activation("relu"))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(256, kernel_size=(3,3),activation='relu',kernel_initializer='uniform',input_shape=X_train.shape[1:]))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2,2), strides=(2, 2)))
+model.add(Dropout(0.5))
 
-model.add(Conv2D(128, (3, 3)))
-model.add(Activation("relu"))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(256, kernel_size=(3,3),activation='relu',kernel_initializer='uniform',input_shape=X_train.shape[1:]))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2,2), strides=(2, 2)))
+model.add(Dropout(0.5))
+
+model.add(Conv2D(128, kernel_size=(3,3),activation='relu',kernel_initializer='uniform',input_shape=X_train.shape[1:]))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2,2), strides=(2, 2)))
+model.add(Dropout(0.5))
 
 model.add(Flatten())
-model.add(Dense(128))
 
-model.add(Dense(32))
+#fully connected neural networks
+model.add(Dense(512, activation='relu'))
+model.add(Dropout(0.2) )
+model.add(Dense(1024, activation='relu'))
+model.add(Dropout(0.2))
 
-model.add(Dense(1))
-model.add(Activation("sigmoid"))
+model.add(Dense(512, activation='relu'))
+model.add(Dropout(0.2))
 
-model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-model.fit(x, y, batch_size=64, epochs=10, validation_split=0.2)
+model.add(Dense(7, activation='softmax'))
+
+
+model.compile(loss='categorical_crossentropy',
+              optimizer='adam',
+              metrics=['accuracy'])
+
+#Training the model
+model.fit(X_train, train_y,
+          batch_size=64,
+          epochs=15,
+          verbose=1,
+          validation_data=(X_test, test_y),
+          shuffle=True)
 
 cap = cv2.VideoCapture(0)
 face_cascade = cv2.CascadeClassifier('face.xml')
